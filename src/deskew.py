@@ -18,13 +18,9 @@ def preprocess_for_lines(gray):
 
 
 def estimate_angle_hough(gray, debug=False):
-    """
-    Estimate skew angle using probabilistic Hough transform.
-    Returns angle in degrees. Positive means counterclockwise.
-    """
+  
     edges = preprocess_for_lines(gray)
 
-    # Probabilistic Hough: returns segments
     lines = cv2.HoughLinesP(
         edges,
         rho=1,
@@ -49,13 +45,11 @@ def estimate_angle_hough(gray, debug=False):
             continue
         angle = np.degrees(np.arctan2(dy, dx))
 
-        # Map to [-90, 90)
         if angle < -90:
             angle += 180
         if angle >= 90:
             angle -= 180
 
-        # Keep near horizontal only
         if -45 < angle < 45:
             angles.append(angle)
 
@@ -64,7 +58,6 @@ def estimate_angle_hough(gray, debug=False):
             print("No near-horizontal lines. Returning 0.")
         return 0.0
 
-    # Histogram to find dominant angle
     hist, bin_edges = np.histogram(angles, bins=90, range=(-45, 45))
     max_bin_index = np.argmax(hist)
     bin_start = bin_edges[max_bin_index]
@@ -79,11 +72,7 @@ def estimate_angle_hough(gray, debug=False):
 
 
 def rotate_image_keep_bounds(img, angle_deg):
-    """
-    Rotate image by angle_deg around its center.
-    Positive angle means counterclockwise.
-    Output canvas is expanded to avoid cropping.
-    """
+
     (h, w) = img.shape[:2]
     center = (w // 2, h // 2)
 
@@ -109,29 +98,18 @@ def rotate_image_keep_bounds(img, angle_deg):
 
 
 def deskew_image(img, debug=False):
-    """
-    Full pipeline with auto direction check.
-    1. Convert to grayscale.
-    2. Estimate skew angle with Hough.
-    3. Try rotating by -angle and +angle.
-    4. Pick the rotation that leaves the page closest to horizontal.
-    Returns: corrected_image, est_angle
-    est_angle is the raw Hough estimate (for evaluation).
-    """
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     est_angle = estimate_angle_hough(gray, debug=debug)
 
-    # First candidate: rotate by -est_angle (what we had before)
     cand1 = rotate_image_keep_bounds(img, -est_angle)
     gray1 = cv2.cvtColor(cand1, cv2.COLOR_BGR2GRAY)
     resid1 = abs(estimate_angle_hough(gray1, debug=False))
 
-    # Second candidate: rotate by +est_angle (opposite direction)
     cand2 = rotate_image_keep_bounds(img, est_angle)
     gray2 = cv2.cvtColor(cand2, cv2.COLOR_BGR2GRAY)
     resid2 = abs(estimate_angle_hough(gray2, debug=False))
 
-    # Choose the rotation that leaves the document more horizontal
     if resid1 <= resid2:
         corrected = cand1
         chosen_rot = -est_angle
@@ -145,5 +123,4 @@ def deskew_image(img, debug=False):
         print(f"Residual after +est: {resid2:.2f} deg")
         print(f"Chosen rotation to apply: {chosen_rot:.2f} deg")
 
-    # For evaluation we still return est_angle, since that is the raw estimate
     return corrected, est_angle

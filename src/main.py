@@ -17,7 +17,6 @@ def main():
 
     print(f"Estimated angle: {est_angle:.2f} degrees")
 
-    # Save output
     if args.save_dir is None:
         dirname, fname = os.path.split(args.image)
         name, ext = os.path.splitext(fname)

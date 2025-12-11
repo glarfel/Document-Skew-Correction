@@ -14,7 +14,6 @@ def load_annotations(csv_path):
     with open(csv_path, newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # skip empty lines (like blank lines between blocks)
             if not row["image"]:
                 continue
             records.append(row)
@@ -33,10 +32,6 @@ def evaluate():
         img = load_image(img_path)
 
         corrected, est_angle = deskew_image(img, debug=False)
-
-        # You can save a few examples if you want
-        # out_path = os.path.join(SYNTHETIC_DIR, "corrected_" + img_name)
-        # cv2.imwrite(out_path, corrected)
 
         e1 = abs(est_angle - true_angle)
         e2 = abs(est_angle + true_angle)
